@@ -1,4 +1,4 @@
-# React-ASP Framework
+# Manifold
 
 I know ASP.NET has a template for React - this is not that. I built this framework from scratch, so it's clean and simple.
 
@@ -17,7 +17,7 @@ The full loop looks like this: add a C# model → run a migration → build the 
 
 ## Contents
 
-- [React-ASP Framework](#react-asp-framework)
+- [Manifold](#manifold)
   - [Axioms](#axioms)
   - [Contents](#contents)
   - [Getting Started](#getting-started)
@@ -57,8 +57,8 @@ The full loop looks like this: add a C# model → run a migration → build the 
 ### Running the app
 
 ```bash
-git clone https://github.com/your-username/react-asp-framework.git
-cd react-asp-framework
+git clone https://github.com/your-username/manifold.git
+cd manifold
 ```
 
 Start the API:
