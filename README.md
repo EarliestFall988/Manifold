@@ -2,6 +2,27 @@
 
 I know ASP.NET has a template for React - this is not that. I built this framework from scratch, so it's clean and simple.
 
+## Contents
+
+- [Getting Started](#getting-started)
+- [Migrations](#migrations)
+- [Adding a Feature](#adding-a-feature-end-to-end)
+- [UI Conventions](#ui-conventions)
+- [UI Framework](#ui-framework-react)
+  - [Vite](#vite)
+  - [Tailwind CSS](#tailwind-css)
+  - [Tanstack Router](#tanstack-router)
+  - [Tanstack Query](#tanstack-query)
+  - [Axios](#axios)
+  - [Shadcn UI](#shadcn-ui)
+  - [Phosphor Icons](#phosphor-icons)
+  - [Auto-animate](#auto-animate)
+- [API Framework](#api-framework-aspnet-core)
+  - [OData](#odata)
+  - [Type Generator](#type-generator)
+  - [Entity Framework Core](#entity-framework-core)
+  - [SQLite](#sqlite)
+
 ## Getting Started
 
 ### Prerequisites
