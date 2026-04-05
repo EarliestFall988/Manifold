@@ -100,7 +100,7 @@ npm run dev
 When you add new models to the API, two files are automatically generated on the frontend whenever the API project builds:
 
 - `ui/src/types/api.generated.ts` - TypeScript interfaces for every model
-- `ui/src/hooks/api.generated.ts` - a ready-to-use React Query hook for every model
+- `ui/src/hooks/api.generated.ts` - React Query hooks for every model (reads and mutations)
 
 This is not typical for most TypeScript stacks - and it's a big deal. Frontend devs don't need to open Postman or dig through backend code to figure out the shape of the data. The types and hooks just show up, and TypeScript will tell you immediately if something is wrong. Teams can move really fast with this setup.
 
@@ -127,16 +127,35 @@ Here's the full loop for adding something new to the app:
 ### Frontend
 
 1. Build and run the API - types and hooks are generated automatically
-2. Import your hook from `ui/src/hooks/api.generated.ts` and use it in a route
+2. Import your hooks from `ui/src/hooks/api.generated.ts` and use them in a route
+
+**Reading data:**
 
 ```ts
 import { useWeatherForecast } from "@/hooks/api.generated";
 
 const { data, isLoading, error } = useWeatherForecast();
 
-// or with OData query params
+// with OData query params
 const { data } = useWeatherForecast("$top=5&$orderby=Date desc");
 ```
+
+**Mutating data:**
+
+```ts
+import { useCreateWeatherForecast, useUpdateWeatherForecast, useDeleteWeatherForecast } from "@/hooks/api.generated";
+
+const create = useCreateWeatherForecast();
+create.mutate({ date: "2026-01-01", temperatureC: 22, summary: "Mild" });
+
+const update = useUpdateWeatherForecast();
+update.mutate({ key: 1, delta: { summary: "Hot" } });
+
+const remove = useDeleteWeatherForecast();
+remove.mutate(1);
+```
+
+The `delta` on update is typed as `Partial<T>` — TypeScript only allows fields that exist on the model, and the backend's `Delta<T>` applies only what was sent. No need to send the full object for a one-field change.
 
 ## UI Conventions
 
@@ -201,13 +220,26 @@ Adds smooth animations to lists and DOM changes with a single line of code. Drop
 
 ### [OData](https://learn.microsoft.com/en-us/odata/webapi-8/overview)
 
-Lets the frontend query exactly the data it needs - no over-fetching or under-fetching.
+Lets the frontend query exactly the data it needs - no over-fetching or under-fetching. OData also handles all standard CRUD mutations, so reads and writes stay on a consistent convention.
+
+**Reads:**
 
 ```http
-/odata/WeatherForecast?$top=5
-/odata/WeatherForecast?$filter=TemperatureC gt 25
-/odata/WeatherForecast?$orderby=Date desc
+GET /odata/WeatherForecast?$top=5
+GET /odata/WeatherForecast?$filter=TemperatureC gt 25
+GET /odata/WeatherForecast?$orderby=Date desc
+GET /odata/WeatherForecast(1)
 ```
+
+**Mutations:**
+
+```http
+POST   /odata/WeatherForecast          - create, body is the full entity
+PATCH  /odata/WeatherForecast(1)       - partial update, body is only changed fields
+DELETE /odata/WeatherForecast(1)       - delete by id
+```
+
+`PATCH` uses ASP.NET OData's `Delta<T>` — only the fields present in the request body are applied. This means the frontend never has to fetch the full entity just to update one field.
 
 ### Custom Endpoints
 
@@ -262,6 +294,12 @@ public record SignInRequest(string Email, string Password);
 [TsQueryGenIgnore]
 public record SignInResponse(string Token);
 ```
+
+#### A note on runtime validation (Zod etc.)
+
+Manifold doesn't use Zod for generated mutations. The type safety is already guaranteed end-to-end — the TypeScript interface is generated from the same C# model that defines the database schema, `Delta<T>` enforces it on the way into the backend, and EF Core enforces it at the database level. Adding a runtime validation layer in the middle would be solving a problem that's already solved.
+
+Zod is appropriate at real trust boundaries — user-typed form input, third-party API responses, webhook payloads. Use it there, not on internal CRUD operations.
 
 ### [Entity Framework Core](https://learn.microsoft.com/en-us/ef/core/)
 
