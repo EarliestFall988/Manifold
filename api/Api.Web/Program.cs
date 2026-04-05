@@ -9,6 +9,15 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(builder.Configuration.GetConnectionString("Default") ?? "Data Source=app.db"));
 
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+        policy.WithOrigins(allowedOrigins)
+              .AllowAnyHeader()
+              .AllowAnyMethod());
+});
+
 var odataBuilder = new ODataConventionModelBuilder();
 odataBuilder.EntitySet<WeatherForecast>("WeatherForecast");
 
@@ -35,6 +44,17 @@ using (var scope = app.Services.CreateScope())
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+}
+
+app.UseCors();
+
+if (app.Environment.IsDevelopment())
+{
+    app.Use(async (context, next) =>
+    {
+        await Task.Delay(500);
+        await next();
+    });
 }
 
 app.UseHttpsRedirection();

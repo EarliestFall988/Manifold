@@ -16,4 +16,9 @@
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.0.5" />
   </ItemGroup>
 
+
+  <Target Name="GenerateTypeScriptModels" AfterTargets="Build">
+    <Exec Command="dotnet run --project &quot;$(MSBuildThisFileDirectory)../Api.TypeGen/Api.TypeGen.csproj&quot; -- &quot;$(MSBuildThisFileDirectory)Models&quot; &quot;$(MSBuildThisFileDirectory)../../ui/src/types/api.generated.ts&quot;" />
+  </Target>
+
 </Project>
