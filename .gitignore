@@ -1,0 +1,84 @@
+# ========================
+# .NET / ASP.NET Core
+# ========================
+
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+artifacts/
+.vs/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.userprefs
+project.lock.json
+project.fragment.lock.json
+*.nupkg
+*.snupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+*.pubxml
+*.publishsettings
+PublishScripts/
+BenchmarkDotNet.Artifacts/
+coverage*.json
+coverage*.xml
+coverage*.info
+*.binlog
+.ionide/
+.mfractor/
+.localhistory/
+.vshistory/
+.history/
+FodyWeavers.xsd
+*.sln.iml
+.idea/
+
+# SQLite runtime files
+*.db
+*.db-shm
+*.db-wal
+
+# ========================
+# Node / React (ui/)
+# ========================
+
+node_modules/
+dist/
+dist-ssr/
+*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ========================
+# Environment
+# ========================
+
+.env
+.env.local
+.env.*.local
+
+# ========================
+# OS
+# ========================
+
+.DS_Store
+.AppleDouble
+Thumbs.db
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.swp
+*~
