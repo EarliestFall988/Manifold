@@ -245,10 +245,12 @@ A custom tool that runs on every build and generates two files from the C# model
 The generator handles both `class` and `record` declarations. Several attributes are available to control generation behavior:
 
 **Property-level:**
+
 - `[TsIgnore]` - excludes a property from the generated interface
 - `[TsName("newName")]` - overrides the property name in the generated interface
 
 **Class/record-level:**
+
 - `[TsQueryGenIgnore]` - generates the TypeScript interface but skips OData hook generation. Use this on request/response types for custom endpoints that aren't part of the OData entity model.
 
 ```csharp
