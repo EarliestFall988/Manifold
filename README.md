@@ -1,8 +1,8 @@
 # Manifold
 
-Manifold is a rapid application development stack built for enterprise teams that need to move fast without sacrificing type safety or developer control. One C# model drives everything downstream — database schema, TypeScript interfaces, and React Query hooks are all generated automatically on every build. No API versioning discussions, no syncing a separate schema file, no Postman.
+Manifold is a rapid application development stack built for enterprise teams that need to move fast without sacrificing type safety or developer control. One C# model drives everything downstream - database schema, TypeScript interfaces, and React Query hooks are all generated automatically on every build. No API versioning discussions, no syncing a separate schema file, no Postman.
 
-The target is the gap between "enterprise tooling" (OutSystems, PowerApps — slow, locked-in, low developer trust) and "build it from scratch" (full control, but weeks of boilerplate before you ship anything). Manifold sits in the middle: real code, real stack, but the repetitive parts automated away.
+The target is the gap between "enterprise tooling" (OutSystems, PowerApps - slow, locked-in, low developer trust) and "build it from scratch" (full control, but weeks of boilerplate before you ship anything). Manifold sits in the middle: real code, real stack, but the repetitive parts automated away.
 
 ## Axioms
 
@@ -211,7 +211,7 @@ Lets the frontend query exactly the data it needs - no over-fetching or under-fe
 
 ### Custom Endpoints
 
-Not everything fits the OData model. Sign-in, file uploads, actions that trigger side effects — these belong on regular REST endpoints alongside the OData routes.
+Not everything fits the OData model. Sign-in, file uploads, actions that trigger side effects - these belong on regular REST endpoints alongside the OData routes.
 
 Since `AddControllers()` and `MapControllers()` are already configured, you just add a controller that extends `ControllerBase` instead of `ODataController`:
 
@@ -232,8 +232,8 @@ public class AuthController : ControllerBase
 
 The convention is:
 
-- `/odata/*` — entity CRUD via OData controllers
-- `/api/*` — custom operations via plain `ControllerBase` controllers
+- `/odata/*` - entity CRUD via OData controllers
+- `/api/*` - custom operations via plain `ControllerBase` controllers
 
 For the request/response types, put them in `api/Api.Web/Models/` and tag them with `[TsQueryGenIgnore]` (see [Type Generator](#type-generator)) so the TypeScript interface is generated but no OData hook is created for them.
 
