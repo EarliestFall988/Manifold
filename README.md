@@ -2,26 +2,50 @@
 
 I know ASP.NET has a template for React - this is not that. I built this framework from scratch, so it's clean and simple.
 
+## Axioms
+
+This stack is opinionated by design. The opinions are:
+
+- **Code first** - the C# model is the source of truth. Everything downstream (database schema, TypeScript types, React hooks) flows from it automatically.
+- **Migrations as the contract** - when you change a model and run a migration, the frontend picks up the new types on the next build. No API versioning discussions, no syncing a separate schema file, no Postman.
+- **A query layer, not a REST layer** - OData means the backend exposes data, not opinions about how the frontend should consume it. Filtering, sorting, and pagination are the frontend's problem.
+- **A thin wrapper, not a framework** - Axios + React Query aren't hidden behind abstractions. You're writing the same patterns the docs show, just with the boilerplate generated for you.
+- **No manual loading and error states** - React Query handles all of it. `isLoading`, `error`, and `data` are just there.
+- **No global state management for server data** - React Query's cache replaces Redux/Zustand for anything that comes from an API. You don't need a store for data that already lives on the server.
+
+The full loop looks like this: add a C# model → run a migration → build the API → import the generated hook → done. No context switching, no duplicate effort, no runtime surprises from mismatched types. For a small team moving fast, that's a significant advantage.
+
 ## Contents
 
-- [Getting Started](#getting-started)
-- [Migrations](#migrations)
-- [Adding a Feature](#adding-a-feature-end-to-end)
-- [UI Conventions](#ui-conventions)
-- [UI Framework](#ui-framework-react)
-  - [Vite](#vite)
-  - [Tailwind CSS](#tailwind-css)
-  - [Tanstack Router](#tanstack-router)
-  - [Tanstack Query](#tanstack-query)
-  - [Axios](#axios)
-  - [Shadcn UI](#shadcn-ui)
-  - [Phosphor Icons](#phosphor-icons)
-  - [Auto-animate](#auto-animate)
-- [API Framework](#api-framework-aspnet-core)
-  - [OData](#odata)
-  - [Type Generator](#type-generator)
-  - [Entity Framework Core](#entity-framework-core)
-  - [SQLite](#sqlite)
+- [React-ASP Framework](#react-asp-framework)
+  - [Axioms](#axioms)
+  - [Contents](#contents)
+  - [Getting Started](#getting-started)
+    - [Prerequisites](#prerequisites)
+    - [Running the app](#running-the-app)
+  - [Migrations](#migrations)
+  - [Adding a Feature (End-to-End)](#adding-a-feature-end-to-end)
+    - [Backend](#backend)
+    - [Frontend](#frontend)
+  - [UI Conventions](#ui-conventions)
+    - [Path Alias](#path-alias)
+    - [OData Response Shape](#odata-response-shape)
+  - [UI Framework (React)](#ui-framework-react)
+    - [Vite](#vite)
+    - [Tailwind CSS](#tailwind-css)
+    - [Tanstack Libraries](#tanstack-libraries)
+      - [Tanstack Router](#tanstack-router)
+      - [Tanstack Query](#tanstack-query)
+    - [Axios](#axios)
+    - [Shadcn UI](#shadcn-ui)
+    - [Phosphor Icons](#phosphor-icons)
+    - [Auto-animate](#auto-animate)
+  - [API Framework (ASP.NET Core)](#api-framework-aspnet-core)
+    - [OData](#odata)
+    - [Custom Endpoints](#custom-endpoints)
+    - [Type Generator](#type-generator)
+    - [Entity Framework Core](#entity-framework-core)
+    - [SQLite](#sqlite)
 
 ## Getting Started
 
@@ -55,7 +79,7 @@ cd ui
 npm install
 ```
 
-Create a `.env` file in the `ui/` directory — this is gitignored and won't exist after a fresh clone:
+Create a `.env` file in the `ui/` directory - this is gitignored and won't exist after a fresh clone:
 
 ```bash
 VITE_API_URL=http://localhost:5289
@@ -71,9 +95,12 @@ npm run dev
 
 ## Migrations
 
-When you add new models to the API, TypeScript types are automatically generated on the frontend whenever the API project builds. You'll find them in `ui/src/types/api.generated.ts`.
+When you add new models to the API, two files are automatically generated on the frontend whenever the API project builds:
 
-This is not typical for most TypeScript stacks - and it's a big deal. Frontend devs don't need to open Postman or dig through backend code to figure out the shape of the data. The types just show up, and TypeScript will tell you immediately if something is wrong. Teams can move really fast with this setup.
+- `ui/src/types/api.generated.ts` - TypeScript interfaces for every model
+- `ui/src/hooks/api.generated.ts` - a ready-to-use React Query hook for every model
+
+This is not typical for most TypeScript stacks - and it's a big deal. Frontend devs don't need to open Postman or dig through backend code to figure out the shape of the data. The types and hooks just show up, and TypeScript will tell you immediately if something is wrong. Teams can move really fast with this setup.
 
 To add a new migration after updating your models:
 
@@ -97,10 +124,17 @@ Here's the full loop for adding something new to the app:
 
 ### Frontend
 
-1. Build and run the API — TypeScript types for your new model will be generated automatically in `ui/src/types/api.generated.ts`
-2. Add an API function in `ui/src/api/` using Axios and the generated types
-3. Wrap it in a Tanstack Query hook in `ui/src/hooks/`
-4. Create a route file in `ui/src/routes/` and use the hook
+1. Build and run the API - types and hooks are generated automatically
+2. Import your hook from `ui/src/hooks/api.generated.ts` and use it in a route
+
+```ts
+import { useWeatherForecast } from "@/hooks/api.generated";
+
+const { data, isLoading, error } = useWeatherForecast();
+
+// or with OData query params
+const { data } = useWeatherForecast("$top=5&$orderby=Date desc");
+```
 
 ## UI Conventions
 
@@ -132,7 +166,7 @@ Handles building, bundling, and hot module replacement. Fast dev experience, opt
 
 ### [Tailwind CSS](https://tailwindcss.com/)
 
-Handles all the styling. The best way to describe Tailwind is zen mode CSS — I will fight to put this on any new project.
+Handles all the styling. The best way to describe Tailwind is zen mode CSS - I will fight to put this on any new project.
 
 ### Tanstack Libraries
 
@@ -165,7 +199,7 @@ Adds smooth animations to lists and DOM changes with a single line of code. Drop
 
 ### [OData](https://learn.microsoft.com/en-us/odata/webapi-8/overview)
 
-Lets the frontend query exactly the data it needs — no over-fetching or under-fetching.
+Lets the frontend query exactly the data it needs - no over-fetching or under-fetching.
 
 ```http
 /odata/WeatherForecast?$top=5
@@ -173,14 +207,57 @@ Lets the frontend query exactly the data it needs — no over-fetching or under-
 /odata/WeatherForecast?$orderby=Date desc
 ```
 
+### Custom Endpoints
+
+Not everything fits the OData model. Sign-in, file uploads, actions that trigger side effects — these belong on regular REST endpoints alongside the OData routes.
+
+Since `AddControllers()` and `MapControllers()` are already configured, you just add a controller that extends `ControllerBase` instead of `ODataController`:
+
+```csharp
+// Controllers/AuthController.cs
+[ApiController]
+[Route("api/[controller]")]
+public class AuthController : ControllerBase
+{
+    [HttpPost("signin")]
+    public IActionResult SignIn([FromBody] SignInRequest request)
+    {
+        // ...
+        return Ok(new SignInResponse(token));
+    }
+}
+```
+
+The convention is:
+
+- `/odata/*` — entity CRUD via OData controllers
+- `/api/*` — custom operations via plain `ControllerBase` controllers
+
+For the request/response types, put them in `api/Api.Web/Models/` and tag them with `[TsQueryGenIgnore]` (see [Type Generator](#type-generator)) so the TypeScript interface is generated but no OData hook is created for them.
+
 ### Type Generator
 
-A custom tool that generates TypeScript interfaces directly from the C# models on every build. Keeps the frontend and backend in sync automatically.
+A custom tool that runs on every build and generates two files from the C# models:
 
-Two attributes are available to control generation on a per-property basis:
+- `ui/src/types/api.generated.ts` - TypeScript interfaces
+- `ui/src/hooks/api.generated.ts` - React Query hooks with optional OData query param support
 
-- `[TsIgnore]` — excludes a property from the generated interface
-- `[TsName("newName")]` — overrides the property name in the generated interface
+The generator handles both `class` and `record` declarations. Several attributes are available to control generation behavior:
+
+**Property-level:**
+- `[TsIgnore]` - excludes a property from the generated interface
+- `[TsName("newName")]` - overrides the property name in the generated interface
+
+**Class/record-level:**
+- `[TsQueryGenIgnore]` - generates the TypeScript interface but skips OData hook generation. Use this on request/response types for custom endpoints that aren't part of the OData entity model.
+
+```csharp
+[TsQueryGenIgnore]
+public record SignInRequest(string Email, string Password);
+
+[TsQueryGenIgnore]
+public record SignInResponse(string Token);
+```
 
 ### [Entity Framework Core](https://learn.microsoft.com/en-us/ef/core/)
 

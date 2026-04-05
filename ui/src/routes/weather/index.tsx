@@ -1,7 +1,7 @@
 import { Header } from "@/components/header";
-import { useWeather } from "@/hooks/useWeather";
+import { useWeatherForecast } from "@/hooks/api.generated";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
-import { FireIcon, SpinnerGapIcon } from "@phosphor-icons/react";
+import { SpinnerGapIcon } from "@phosphor-icons/react";
 import { createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/weather/")({
@@ -11,7 +11,7 @@ export const Route = createFileRoute("/weather/")({
 function RouteComponent() {
   const [animParent] = useAutoAnimate();
 
-  const { data, isLoading, error } = useWeather();
+  const { data, isLoading, error } = useWeatherForecast();
 
   return (
     <div ref={animParent} className="flex flex-col gap-0">

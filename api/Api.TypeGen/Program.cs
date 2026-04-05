@@ -19,6 +19,8 @@ if (!Directory.Exists(modelsDir))
 
 var sourceFiles = Directory.GetFiles(modelsDir, "*.cs", SearchOption.AllDirectories);
 var interfaces = new List<string>();
+var classNames = new List<string>();        // OData hook generation
+var queryIgnoredNames = new List<string>(); // type-only (no hook)
 
 foreach (var file in sourceFiles)
 {
@@ -26,11 +28,21 @@ foreach (var file in sourceFiles)
     var tree = CSharpSyntaxTree.ParseText(source);
     var root = tree.GetCompilationUnitRoot();
 
-    foreach (var classDecl in root.DescendantNodes().OfType<ClassDeclarationSyntax>())
+    var typeDecls = root.DescendantNodes()
+        .Where(n => n is ClassDeclarationSyntax or RecordDeclarationSyntax)
+        .Cast<MemberDeclarationSyntax>();
+
+    foreach (var typeDecl in typeDecls)
     {
-        var tsInterface = GenerateInterface(classDecl);
-        if (tsInterface is not null)
-            interfaces.Add(tsInterface);
+        var (tsInterface, name) = GenerateInterface(typeDecl);
+        if (tsInterface is null || name is null) continue;
+
+        interfaces.Add(tsInterface);
+
+        if (HasTypeAttribute(typeDecl, "TsQueryGenIgnore"))
+            queryIgnoredNames.Add(name);
+        else
+            classNames.Add(name);
     }
 }
 
@@ -54,18 +66,68 @@ lines.AddRange(interfaces);
 
 File.WriteAllText(outputFile, string.Join("\n", lines) + "\n");
 Console.WriteLine($"Generated {interfaces.Count} type(s) → {outputFile}");
+
+if (args.Length >= 3)
+{
+    var hooksFile = args[2];
+    var hooksDir = Path.GetDirectoryName(hooksFile)!;
+    Directory.CreateDirectory(hooksDir);
+
+    var hooksLines = new List<string>
+    {
+        "// AUTO GENERATED with ❤️ by Api.TypeGen",
+        "// This file auto-generates React Query hooks for all API models.",
+        "// Last Generated: " + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + " UTC",
+        "",
+        "import { useQuery } from \"@tanstack/react-query\";",
+        "import axios from \"axios\";",
+        "import type { ODataResponse } from \"@/types/odata\";",
+        "import type { " + string.Join(", ", classNames) + " } from \"@/types/api.generated\";",
+        ""
+    };
+
+    foreach (var name in classNames)
+    {
+        var getter = $"get{name}";
+        var hook = $"use{name}";
+        hooksLines.AddRange([
+            $"const {getter} = (query?: string) =>",
+            $"  axios",
+            $"    .get<ODataResponse<{name}>>(`${{import.meta.env.VITE_API_URL}}/odata/{name}${{query ? `?${{query}}` : \"\"}}`)",
+            $"    .then((res) => res.data);",
+            "",
+            $"export const {hook} = (query?: string) =>",
+            $"  useQuery({{",
+            $"    queryKey: [\"{name}\", query],",
+            $"    queryFn: () => {getter}(query),",
+            $"  }});",
+            ""
+        ]);
+    }
+
+    File.WriteAllText(hooksFile, string.Join("\n", hooksLines) + "\n");
+    Console.WriteLine($"Generated {classNames.Count} hook(s) → {hooksFile}");
+}
+
 return 0;
 
-static string? GenerateInterface(ClassDeclarationSyntax classDecl)
+static (string? tsInterface, string? name) GenerateInterface(MemberDeclarationSyntax typeDecl)
 {
-    var className = classDecl.Identifier.Text;
-    var properties = classDecl.Members
+    var (className, members) = typeDecl switch
+    {
+        ClassDeclarationSyntax c  => (c.Identifier.Text, c.Members),
+        RecordDeclarationSyntax r => (r.Identifier.Text, r.Members),
+        _                         => (null, default)
+    };
+
+    if (className is null) return (null, null);
+
+    var properties = members
         .OfType<PropertyDeclarationSyntax>()
         .Where(p => p.Modifiers.Any(m => m.IsKind(SyntaxKind.PublicKeyword)))
         .ToList();
 
-    if (properties.Count == 0)
-        return null;
+    if (properties.Count == 0) return (null, null);
 
     var lines = new List<string> { $"export interface {className} {{" };
 
@@ -83,8 +145,13 @@ static string? GenerateInterface(ClassDeclarationSyntax classDecl)
 
     lines.Add("}");
     lines.Add("");
-    return string.Join("\n", lines);
+    return (string.Join("\n", lines), className);
 }
+
+static bool HasTypeAttribute(MemberDeclarationSyntax typeDecl, string name) =>
+    typeDecl.AttributeLists
+        .SelectMany(al => al.Attributes)
+        .Any(a => a.Name.ToString() is var n && (n == name || n == name + "Attribute"));
 
 static bool IsComputedGetter(PropertyDeclarationSyntax prop)
 {
