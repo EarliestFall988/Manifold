@@ -1,6 +1,8 @@
 # Manifold
 
-I know ASP.NET has a template for React - this is not that. I built this framework from scratch, so it's clean and simple.
+Manifold is a rapid application development stack built for enterprise teams that need to move fast without sacrificing type safety or developer control. One C# model drives everything downstream — database schema, TypeScript interfaces, and React Query hooks are all generated automatically on every build. No API versioning discussions, no syncing a separate schema file, no Postman.
+
+The target is the gap between "enterprise tooling" (OutSystems, PowerApps — slow, locked-in, low developer trust) and "build it from scratch" (full control, but weeks of boilerplate before you ship anything). Manifold sits in the middle: real code, real stack, but the repetitive parts automated away.
 
 ## Axioms
 
