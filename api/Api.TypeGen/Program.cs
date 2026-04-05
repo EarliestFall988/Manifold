@@ -131,6 +131,59 @@ if (args.Length >= 3)
     Console.WriteLine($"Generated {classNames.Count} hook(s) → {hooksFile}");
 }
 
+if (args.Length >= 4)
+{
+    var controllersDir = args[3];
+    Directory.CreateDirectory(controllersDir);
+
+    var generated = 0;
+    var skipped = 0;
+
+    foreach (var file in sourceFiles)
+    {
+        var source = File.ReadAllText(file);
+        var tree = CSharpSyntaxTree.ParseText(source);
+        var root = tree.GetCompilationUnitRoot();
+
+        foreach (var classDecl in root.DescendantNodes().OfType<ClassDeclarationSyntax>())
+        {
+            if (!ImplementsIAudit(classDecl)) continue;
+
+            var name = classDecl.Identifier.Text;
+            var keyType = GetKeyType(classDecl);
+            var controllerFile = Path.Combine(controllersDir, $"{name}Controller.cs");
+
+            if (File.Exists(controllerFile))
+            {
+                skipped++;
+                continue;
+            }
+
+            var plural = $"{name}s";
+            var content = string.Join("\n", [
+                "using Microsoft.EntityFrameworkCore;",
+                "using Api.Web.Database;",
+                "using Api.Web.Models;",
+                "",
+                "namespace Api.Web.Controllers;",
+                "",
+                $"public class {name}Controller(AppDbContext db) : ManifoldController<{name}, {keyType}>(db)",
+                "{",
+                $"    protected override DbSet<{name}> Entities => db.{plural};",
+                "}",
+                ""
+            ]);
+
+            File.WriteAllText(controllerFile, content);
+            Console.WriteLine($"Generated controller → {controllerFile}");
+            generated++;
+        }
+    }
+
+    if (skipped > 0)
+        Console.WriteLine($"Skipped {skipped} existing controller(s).");
+}
+
 return 0;
 
 static (string? tsInterface, string? name) GenerateInterface(MemberDeclarationSyntax typeDecl)
@@ -174,6 +227,21 @@ static bool HasTypeAttribute(MemberDeclarationSyntax typeDecl, string name) =>
     typeDecl.AttributeLists
         .SelectMany(al => al.Attributes)
         .Any(a => a.Name.ToString() is var n && (n == name || n == name + "Attribute"));
+
+static bool ImplementsIAudit(ClassDeclarationSyntax classDecl) =>
+    classDecl.BaseList?.Types
+        .Any(t => t.Type.ToString() == "IAudit") ?? false;
+
+static string GetKeyType(ClassDeclarationSyntax classDecl)
+{
+    var keyProp = classDecl.Members
+        .OfType<PropertyDeclarationSyntax>()
+        .FirstOrDefault(p =>
+            p.Modifiers.Any(m => m.IsKind(SyntaxKind.PublicKeyword)) &&
+            (p.Identifier.Text == "Id" || HasAttribute(p, "Key")));
+
+    return keyProp is null ? "int" : MapType(keyProp.Type);
+}
 
 static bool IsComputedGetter(PropertyDeclarationSyntax prop)
 {
