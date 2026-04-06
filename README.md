@@ -97,10 +97,10 @@ npm run dev
 
 ## Migrations
 
-When you add new models to the API, two files are automatically generated on the frontend whenever the API project builds:
+When you add new models to the API, files are automatically generated on the frontend whenever the API project builds:
 
-- `ui/src/types/api.generated.ts` - TypeScript interfaces for every model
-- `ui/src/hooks/api.generated.ts` - React Query hooks for every model (reads and mutations)
+- `ui/src/types/<ModelName>.ts` - TypeScript interface for the model
+- `ui/src/hooks/<ModelName>.ts` - React Query hooks for the model (reads and mutations)
 
 This is not typical for most TypeScript stacks - and it's a big deal. Frontend devs don't need to open Postman or dig through backend code to figure out the shape of the data. The types and hooks just show up, and TypeScript will tell you immediately if something is wrong. Teams can move really fast with this setup.
 
@@ -118,21 +118,21 @@ Here's the full loop for adding something new to the app:
 
 ### Backend
 
-1. Add a model to `api/Api.Web/Models/`
+1. Add a model to `api/Api.Web/Models/` that implements `IAudit`
 2. Add a `DbSet` for it in `AppDbContext`
 3. Run a migration (`dotnet ef migrations add <Name>`)
 4. Register the entity set in `Program.cs` with the OData model builder
-5. Create a controller in `api/Api.Web/Controllers/` that extends `ODataController`
+5. Build the API — the controller is generated automatically in `api/Api.Web/Controllers/` if it doesn't exist yet
 
 ### Frontend
 
-1. Build and run the API - types and hooks are generated automatically
-2. Import your hooks from `ui/src/hooks/api.generated.ts` and use them in a route
+1. Build the API — `ui/src/types/<ModelName>.ts` and `ui/src/hooks/<ModelName>.ts` are generated automatically
+2. Import your hooks from `ui/src/hooks/<ModelName>.ts` and use them in a route
 
 **Reading data:**
 
 ```ts
-import { useWeatherForecast } from "@/hooks/api.generated";
+import { useWeatherForecast } from "@/hooks/WeatherForecast";
 
 const { data, isLoading, error } = useWeatherForecast();
 
@@ -143,7 +143,7 @@ const { data } = useWeatherForecast("$top=5&$orderby=Date desc");
 **Mutating data:**
 
 ```ts
-import { useCreateWeatherForecast, useUpdateWeatherForecast, useDeleteWeatherForecast } from "@/hooks/api.generated";
+import { useCreateWeatherForecast, useUpdateWeatherForecast, useDeleteWeatherForecast } from "@/hooks/WeatherForecast";
 
 const create = useCreateWeatherForecast();
 create.mutate({ date: "2026-01-01", temperatureC: 22, summary: "Mild" });
@@ -164,7 +164,7 @@ The `delta` on update is typed as `Partial<T>` — TypeScript only allows fields
 `@/` maps to `ui/src/` throughout the codebase. For example:
 
 ```ts
-import { type WeatherForecast } from "@/types/api.generated";
+import { type WeatherForecast } from "@/types/WeatherForecast";
 ```
 
 ### OData Response Shape
@@ -271,10 +271,12 @@ For the request/response types, put them in `api/Api.Web/Models/` and tag them w
 
 ### Type Generator
 
-A custom tool that runs on every build and generates two files from the C# models:
+A custom tool that runs on every build and generates one file per model from the C# models:
 
-- `ui/src/types/api.generated.ts` - TypeScript interfaces
-- `ui/src/hooks/api.generated.ts` - React Query hooks with optional OData query param support
+- `ui/src/types/<ModelName>.ts` - TypeScript interface
+- `ui/src/hooks/<ModelName>.ts` - React Query hooks with optional OData query param support
+
+Each model gets its own file, so you can open, read, or manually edit a specific model's types or hooks without wading through a monolithic generated file.
 
 The generator handles both `class` and `record` declarations. Several attributes are available to control generation behavior:
 

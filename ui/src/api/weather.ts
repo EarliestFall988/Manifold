@@ -1,4 +1,4 @@
-import { type WeatherForecast } from "@/types/api.generated";
+import { type WeatherForecast } from "@/types/WeatherForecast";
 import type { ODataResponse } from "@/types/odata";
 import axios from "axios";
 

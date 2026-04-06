@@ -1,11 +1,10 @@
 // AUTO GENERATED with ❤️ by Api.TypeGen
-// This file auto-generates React Query hooks for all API models.
-// Last Generated: 2026-04-05 05:38:55 UTC
+// Last Generated: 2026-04-06 01:28:23 UTC
 
 import { useQuery, useMutation } from "@tanstack/react-query";
 import axios from "axios";
 import type { ODataResponse } from "@/types/odata";
-import type { WeatherForecast } from "@/types/api.generated";
+import type { WeatherForecast } from "@/types/WeatherForecast";
 
 const getWeatherForecast = (query?: string) =>
   axios

@@ -4,12 +4,12 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 
 if (args.Length < 2)
 {
-    Console.Error.WriteLine("Usage: Api.TypeGen <models-dir> <output-file>");
+    Console.Error.WriteLine("Usage: Api.TypeGen <models-dir> <types-output-dir> [hooks-output-dir] [controllers-dir]");
     return 1;
 }
 
 var modelsDir = args[0];
-var outputFile = args[1];
+var typesOutputDir = args[1];
 
 if (!Directory.Exists(modelsDir))
 {
@@ -18,9 +18,9 @@ if (!Directory.Exists(modelsDir))
 }
 
 var sourceFiles = Directory.GetFiles(modelsDir, "*.cs", SearchOption.AllDirectories);
-var interfaces = new List<string>();
-var classNames = new List<string>();        // OData hook generation
-var queryIgnoredNames = new List<string>(); // type-only (no hook)
+
+// Single pass: collect only models that implement IAudit (i.e. have a controller)
+var controllerModels = new List<(string name, string keyType, string tsInterface, bool queryIgnored)>();
 
 foreach (var file in sourceFiles)
 {
@@ -28,69 +28,66 @@ foreach (var file in sourceFiles)
     var tree = CSharpSyntaxTree.ParseText(source);
     var root = tree.GetCompilationUnitRoot();
 
-    var typeDecls = root.DescendantNodes()
-        .Where(n => n is ClassDeclarationSyntax or RecordDeclarationSyntax)
-        .Cast<MemberDeclarationSyntax>();
-
-    foreach (var typeDecl in typeDecls)
+    foreach (var classDecl in root.DescendantNodes().OfType<ClassDeclarationSyntax>())
     {
-        var (tsInterface, name) = GenerateInterface(typeDecl);
+        if (!ImplementsIAudit(classDecl)) continue;
+
+        var (tsInterface, name) = GenerateInterface(classDecl);
         if (tsInterface is null || name is null) continue;
 
-        interfaces.Add(tsInterface);
-
-        if (HasTypeAttribute(typeDecl, "TsQueryGenIgnore"))
-            queryIgnoredNames.Add(name);
-        else
-            classNames.Add(name);
+        var queryIgnored = HasTypeAttribute(classDecl, "TsQueryGenIgnore");
+        controllerModels.Add((name, GetKeyType(classDecl), tsInterface, queryIgnored));
     }
 }
 
-if (interfaces.Count == 0)
+if (controllerModels.Count == 0)
 {
-    Console.WriteLine("No model classes found.");
+    Console.WriteLine("No IAudit model classes found.");
     return 0;
 }
 
-var outputDir = Path.GetDirectoryName(outputFile)!;
-Directory.CreateDirectory(outputDir);
+// Write per-model type files
+Directory.CreateDirectory(typesOutputDir);
+var timestamp = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss");
 
-var lines = new List<string>
+foreach (var (name, _, tsInterface, _) in controllerModels)
 {
-    "// AUTO GENERATED with ❤️ by Api.TypeGen",
-    "// This file auto-generates all the TypeScript interfaces for the API models from the C# source code (public properties only).",
-    "// Last Generated: " + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + " UTC",
-    ""
-};
-lines.AddRange(interfaces);
+    var typeFile = Path.Combine(typesOutputDir, $"{name}.ts");
+    var content = string.Join("\n", [
+        "// AUTO GENERATED with ❤️ by Api.TypeGen",
+        $"// Last Generated: {timestamp} UTC",
+        "",
+        tsInterface,
+        ""
+    ]);
+    File.WriteAllText(typeFile, content);
+    Console.WriteLine($"Generated type → {typeFile}");
+}
 
-File.WriteAllText(outputFile, string.Join("\n", lines) + "\n");
-Console.WriteLine($"Generated {interfaces.Count} type(s) → {outputFile}");
-
+// Write per-model hooks files
 if (args.Length >= 3)
 {
-    var hooksFile = args[2];
-    var hooksDir = Path.GetDirectoryName(hooksFile)!;
-    Directory.CreateDirectory(hooksDir);
+    var hooksOutputDir = args[2];
+    Directory.CreateDirectory(hooksOutputDir);
 
-    var hooksLines = new List<string>
+    foreach (var (name, _, _, queryIgnored) in controllerModels)
     {
-        "// AUTO GENERATED with ❤️ by Api.TypeGen",
-        "// This file auto-generates React Query hooks for all API models.",
-        "// Last Generated: " + DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss") + " UTC",
-        "",
-        "import { useQuery, useMutation } from \"@tanstack/react-query\";",
-        "import axios from \"axios\";",
-        "import type { ODataResponse } from \"@/types/odata\";",
-        "import type { " + string.Join(", ", classNames) + " } from \"@/types/api.generated\";",
-        ""
-    };
+        if (queryIgnored) continue;
 
-    foreach (var name in classNames)
-    {
+        var hooksFile = Path.Combine(hooksOutputDir, $"{name}.ts");
         var getter = $"get{name}";
         var hook = $"use{name}";
-        hooksLines.AddRange([
+
+        var lines = new List<string>
+        {
+            "// AUTO GENERATED with ❤️ by Api.TypeGen",
+            $"// Last Generated: {timestamp} UTC",
+            "",
+            "import { useQuery, useMutation } from \"@tanstack/react-query\";",
+            "import axios from \"axios\";",
+            "import type { ODataResponse } from \"@/types/odata\";",
+            $"import type {{ {name} }} from \"@/types/{name}\";",
+            "",
             $"const {getter} = (query?: string) =>",
             $"  axios",
             $"    .get<ODataResponse<{name}>>(`${{import.meta.env.VITE_API_URL}}/odata/{name}${{query ? `?${{query}}` : \"\"}}`)",
@@ -124,13 +121,14 @@ if (args.Length >= 3)
             $"      axios.delete(`${{import.meta.env.VITE_API_URL}}/odata/{name}(${{key}})`),",
             $"  }});",
             ""
-        ]);
-    }
+        };
 
-    File.WriteAllText(hooksFile, string.Join("\n", hooksLines) + "\n");
-    Console.WriteLine($"Generated {classNames.Count} hook(s) → {hooksFile}");
+        File.WriteAllText(hooksFile, string.Join("\n", lines) + "\n");
+        Console.WriteLine($"Generated hooks → {hooksFile}");
+    }
 }
 
+// Generate controllers (skip existing)
 if (args.Length >= 4)
 {
     var controllersDir = args[3];
@@ -139,45 +137,34 @@ if (args.Length >= 4)
     var generated = 0;
     var skipped = 0;
 
-    foreach (var file in sourceFiles)
+    foreach (var (name, keyType, _, _) in controllerModels)
     {
-        var source = File.ReadAllText(file);
-        var tree = CSharpSyntaxTree.ParseText(source);
-        var root = tree.GetCompilationUnitRoot();
+        var controllerFile = Path.Combine(controllersDir, $"{name}Controller.cs");
 
-        foreach (var classDecl in root.DescendantNodes().OfType<ClassDeclarationSyntax>())
+        if (File.Exists(controllerFile))
         {
-            if (!ImplementsIAudit(classDecl)) continue;
-
-            var name = classDecl.Identifier.Text;
-            var keyType = GetKeyType(classDecl);
-            var controllerFile = Path.Combine(controllersDir, $"{name}Controller.cs");
-
-            if (File.Exists(controllerFile))
-            {
-                skipped++;
-                continue;
-            }
-
-            var plural = $"{name}s";
-            var content = string.Join("\n", [
-                "using Microsoft.EntityFrameworkCore;",
-                "using Api.Web.Database;",
-                "using Api.Web.Models;",
-                "",
-                "namespace Api.Web.Controllers;",
-                "",
-                $"public class {name}Controller(AppDbContext db) : ManifoldController<{name}, {keyType}>(db)",
-                "{",
-                $"    protected override DbSet<{name}> Entities => db.{plural};",
-                "}",
-                ""
-            ]);
-
-            File.WriteAllText(controllerFile, content);
-            Console.WriteLine($"Generated controller → {controllerFile}");
-            generated++;
+            skipped++;
+            continue;
         }
+
+        var plural = $"{name}s";
+        var content = string.Join("\n", [
+            "using Microsoft.EntityFrameworkCore;",
+            "using Api.Web.Database;",
+            "using Api.Web.Models;",
+            "",
+            "namespace Api.Web.Controllers;",
+            "",
+            $"public class {name}Controller(AppDbContext db) : ManifoldController<{name}, {keyType}>(db)",
+            "{",
+            $"    protected override DbSet<{name}> Entities => db.{plural};",
+            "}",
+            ""
+        ]);
+
+        File.WriteAllText(controllerFile, content);
+        Console.WriteLine($"Generated controller → {controllerFile}");
+        generated++;
     }
 
     if (skipped > 0)
@@ -219,7 +206,6 @@ static (string? tsInterface, string? name) GenerateInterface(MemberDeclarationSy
     }
 
     lines.Add("}");
-    lines.Add("");
     return (string.Join("\n", lines), className);
 }
 

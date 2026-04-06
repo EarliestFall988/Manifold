@@ -1,5 +1,5 @@
 import { Header } from "@/components/header";
-import { useWeatherForecast } from "@/hooks/api.generated";
+import { useWeatherForecast } from "@/hooks/WeatherForecast";
 import { useAutoAnimate } from "@formkit/auto-animate/react";
 import { SpinnerGapIcon } from "@phosphor-icons/react";
 import { createFileRoute } from "@tanstack/react-router";

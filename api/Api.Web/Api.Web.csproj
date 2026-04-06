@@ -18,7 +18,7 @@
 
 
   <Target Name="GenerateTypeScriptModels" AfterTargets="Build">
-    <Exec Command="dotnet run --project &quot;$(MSBuildThisFileDirectory)../Api.TypeGen/Api.TypeGen.csproj&quot; -- &quot;$(MSBuildThisFileDirectory)Models&quot; &quot;$(MSBuildThisFileDirectory)../../ui/src/types/api.generated.ts&quot; &quot;$(MSBuildThisFileDirectory)../../ui/src/hooks/api.generated.ts&quot; &quot;$(MSBuildThisFileDirectory)Controllers&quot;" />
+    <Exec Command="dotnet run --project &quot;$(MSBuildThisFileDirectory)../Api.TypeGen/Api.TypeGen.csproj&quot; -- &quot;$(MSBuildThisFileDirectory)Models&quot; &quot;$(MSBuildThisFileDirectory)../../ui/src/types&quot; &quot;$(MSBuildThisFileDirectory)../../ui/src/hooks&quot; &quot;$(MSBuildThisFileDirectory)Controllers&quot;" />
   </Target>
 
 </Project>
