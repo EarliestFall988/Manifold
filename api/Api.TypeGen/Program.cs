@@ -2,6 +2,18 @@ using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 
+
+if (args.Length == 0)
+{
+    Console.WriteLine("Make sure you've added new models as a DbSet in AppDbContext.cs and run the application at least once to create the database before generating types/controllers.");
+    Console.WriteLine("Generate API Types and Controllers? Y/N");
+    var input = Console.ReadLine();
+    if (input?.ToUpper() != "Y")
+    {
+        return 0;
+    }
+}
+
 if (args.Length < 2)
 {
     Console.Error.WriteLine("Usage: Api.TypeGen <models-dir> <types-output-dir> [hooks-output-dir] [controllers-dir]");
@@ -46,13 +58,40 @@ if (controllerModels.Count == 0)
     return 0;
 }
 
+// Warn about models missing from AppDbContext
+var dbContextPath = Path.Combine(Path.GetDirectoryName(modelsDir)!, "Database", "AppDbContext.cs");
+if (File.Exists(dbContextPath))
+{
+    var dbContextSource = File.ReadAllText(dbContextPath);
+    var dbContextTree = CSharpSyntaxTree.ParseText(dbContextSource);
+    var dbContextRoot = dbContextTree.GetCompilationUnitRoot();
+    var dbSets = dbContextRoot.DescendantNodes()
+        .OfType<PropertyDeclarationSyntax>()
+        .Where(p => p.Type.ToString().StartsWith("DbSet<"))
+        .Select(p => p.Type is GenericNameSyntax g ? g.TypeArgumentList.Arguments[0].ToString() : null)
+        .Where(n => n is not null)
+        .ToHashSet();
+
+    foreach (var (name, _, _, _) in controllerModels)
+    {
+        if (!dbSets.Contains(name))
+            Console.WriteLine($"WARNING: {name} implements IAudit but has no DbSet<{name}> in AppDbContext — add it before running migrations.");
+    }
+}
+else
+{
+    Console.ForegroundColor = ConsoleColor.Yellow;
+    Console.WriteLine($"WARNING: Could not find AppDbContext at {dbContextPath} — skipping DbSet validation.");
+    Console.ResetColor();
+}
+
 // Write per-model type files
 Directory.CreateDirectory(typesOutputDir);
 var timestamp = DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm:ss");
 
 foreach (var (name, _, tsInterface, _) in controllerModels)
 {
-    var typeFile = Path.Combine(typesOutputDir, $"{name}.ts");
+    var typeFile = Path.Combine(typesOutputDir, $"{name}Type.ts");
     var content = string.Join("\n", [
         "// AUTO GENERATED with ❤️ by Api.TypeGen",
         $"// Last Generated: {timestamp} UTC",
@@ -86,11 +125,11 @@ if (args.Length >= 3)
             "import { useQuery, useMutation } from \"@tanstack/react-query\";",
             "import axios from \"axios\";",
             "import type { ODataResponse } from \"@/types/odata\";",
-            $"import type {{ {name} }} from \"@/types/{name}\";",
+            $"import type {{ {name}Type }} from \"@/types/{name}Type\";",
             "",
             $"const {getter} = (query?: string) =>",
             $"  axios",
-            $"    .get<ODataResponse<{name}>>(`${{import.meta.env.VITE_API_URL}}/odata/{name}${{query ? `?${{query}}` : \"\"}}`)",
+            $"    .get<ODataResponse<{name}Type>>(`${{import.meta.env.VITE_API_URL}}/odata/{name}${{query ? `?${{query}}` : \"\"}}`)",
             $"    .then((res) => res.data);",
             "",
             $"export const {hook} = (query?: string) =>",
@@ -101,17 +140,17 @@ if (args.Length >= 3)
             "",
             $"export const useCreate{name} = () =>",
             $"  useMutation({{",
-            $"    mutationFn: (item: {name}) =>",
+            $"    mutationFn: (item: {name}Type) =>",
             $"      axios",
-            $"        .post<{name}>(`${{import.meta.env.VITE_API_URL}}/odata/{name}`, item)",
+            $"        .post<{name}Type>(`${{import.meta.env.VITE_API_URL}}/odata/{name}`, item)",
             $"        .then((res) => res.data),",
             $"  }});",
             "",
             $"export const useUpdate{name} = () =>",
             $"  useMutation({{",
-            $"    mutationFn: ({{ key, delta }}: {{ key: number; delta: Partial<{name}> }}) =>",
+            $"    mutationFn: ({{ key, delta }}: {{ key: number; delta: Partial<{name}Type> }}) =>",
             $"      axios",
-            $"        .patch<{name}>(`${{import.meta.env.VITE_API_URL}}/odata/{name}(${{key}})`, delta)",
+            $"        .patch<{name}Type>(`${{import.meta.env.VITE_API_URL}}/odata/{name}(${{key}})`, delta)",
             $"        .then((res) => res.data),",
             $"  }});",
             "",
@@ -191,7 +230,7 @@ static (string? tsInterface, string? name) GenerateInterface(MemberDeclarationSy
 
     if (properties.Count == 0) return (null, null);
 
-    var lines = new List<string> { $"export interface {className} {{" };
+    var lines = new List<string> { $"export interface {className}Type {{" };
 
     foreach (var prop in properties)
     {
@@ -226,7 +265,7 @@ static string GetKeyType(ClassDeclarationSyntax classDecl)
             p.Modifiers.Any(m => m.IsKind(SyntaxKind.PublicKeyword)) &&
             (p.Identifier.Text == "Id" || HasAttribute(p, "Key")));
 
-    return keyProp is null ? "int" : MapType(keyProp.Type);
+    return keyProp is null ? "int" : keyProp.Type.ToString();
 }
 
 static bool IsComputedGetter(PropertyDeclarationSyntax prop)

@@ -20,6 +20,9 @@ builder.Services.AddCors(options =>
 
 var odataBuilder = new ODataConventionModelBuilder();
 odataBuilder.EntitySet<WeatherForecast>("WeatherForecast");
+odataBuilder.EntitySet<Student>("Student");
+odataBuilder.EntitySet<Instructor>("Instructor");
+odataBuilder.EntitySet<Course>("Course");
 
 builder.Services.AddControllers()
     .AddOData(options => options

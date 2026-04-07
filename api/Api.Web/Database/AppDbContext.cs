@@ -6,6 +6,9 @@ namespace Api.Web.Database;
 public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
     public DbSet<WeatherForecast> WeatherForecasts => Set<WeatherForecast>();
+    public DbSet<Student> Students => Set<Student>();
+    public DbSet<Instructor> Instructors => Set<Instructor>();
+    public DbSet<Course> Courses => Set<Course>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

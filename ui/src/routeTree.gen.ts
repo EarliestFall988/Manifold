@@ -11,6 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as WeatherIndexRouteImport } from './routes/weather/index'
+import { Route as StudentListIndexRouteImport } from './routes/student-list/index'
+import { Route as StudentListAddIndexRouteImport } from './routes/student-list/add/index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -22,31 +24,49 @@ const WeatherIndexRoute = WeatherIndexRouteImport.update({
   path: '/weather/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StudentListIndexRoute = StudentListIndexRouteImport.update({
+  id: '/student-list/',
+  path: '/student-list/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StudentListAddIndexRoute = StudentListAddIndexRouteImport.update({
+  id: '/student-list/add/',
+  path: '/student-list/add/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/student-list/': typeof StudentListIndexRoute
   '/weather/': typeof WeatherIndexRoute
+  '/student-list/add/': typeof StudentListAddIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/student-list': typeof StudentListIndexRoute
   '/weather': typeof WeatherIndexRoute
+  '/student-list/add': typeof StudentListAddIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/student-list/': typeof StudentListIndexRoute
   '/weather/': typeof WeatherIndexRoute
+  '/student-list/add/': typeof StudentListAddIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/weather/'
+  fullPaths: '/' | '/student-list/' | '/weather/' | '/student-list/add/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/weather'
-  id: '__root__' | '/' | '/weather/'
+  to: '/' | '/student-list' | '/weather' | '/student-list/add'
+  id: '__root__' | '/' | '/student-list/' | '/weather/' | '/student-list/add/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  StudentListIndexRoute: typeof StudentListIndexRoute
   WeatherIndexRoute: typeof WeatherIndexRoute
+  StudentListAddIndexRoute: typeof StudentListAddIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -65,12 +85,28 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WeatherIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/student-list/': {
+      id: '/student-list/'
+      path: '/student-list'
+      fullPath: '/student-list/'
+      preLoaderRoute: typeof StudentListIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/student-list/add/': {
+      id: '/student-list/add/'
+      path: '/student-list/add'
+      fullPath: '/student-list/add/'
+      preLoaderRoute: typeof StudentListAddIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  StudentListIndexRoute: StudentListIndexRoute,
   WeatherIndexRoute: WeatherIndexRoute,
+  StudentListAddIndexRoute: StudentListAddIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

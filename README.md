@@ -1,6 +1,6 @@
 # Manifold
 
-Manifold is a rapid application development stack built for enterprise teams that need to move fast without sacrificing type safety or developer control. One C# model drives everything downstream - database schema, TypeScript interfaces, and React Query hooks are all generated automatically on every build. No API versioning discussions, no syncing a separate schema file, no Postman.
+Manifold is a rapid application development stack built for enterprise teams that need to move fast without sacrificing type safety or developer control. One C# model drives everything downstream - database schema, TypeScript interfaces, and React Query hooks are all generated from a single command. No API versioning discussions, no syncing a separate schema file, no Postman.
 
 The target is the gap between "enterprise tooling" (OutSystems, PowerApps - slow, locked-in, low developer trust) and "build it from scratch" (full control, but weeks of boilerplate before you ship anything). Manifold sits in the middle: real code, real stack, but the repetitive parts automated away.
 
@@ -97,19 +97,24 @@ npm run dev
 
 ## Migrations
 
-When you add new models to the API, files are automatically generated on the frontend whenever the API project builds:
+When you add new models to the API, run the generator to produce:
 
-- `ui/src/types/<ModelName>.ts` - TypeScript interface for the model
+- `ui/src/types/<ModelName>Type.ts` - TypeScript interface for the model (exported as `<ModelName>Type`)
 - `ui/src/hooks/<ModelName>.ts` - React Query hooks for the model (reads and mutations)
+- `api/Api.Web/Controllers/<ModelName>Controller.cs` - OData controller (skipped if it already exists)
+
+```bash
+cd ui
+npm run gen:api
+```
 
 This is not typical for most TypeScript stacks - and it's a big deal. Frontend devs don't need to open Postman or dig through backend code to figure out the shape of the data. The types and hooks just show up, and TypeScript will tell you immediately if something is wrong. Teams can move really fast with this setup.
 
 To add a new migration after updating your models:
 
 ```bash
-cd api/Api.Web
-dotnet ef migrations add <MigrationName>
-dotnet ef database update
+dotnet ef migrations add <MigrationName> --project api/Api.Web
+dotnet ef database update --project api/Api.Web
 ```
 
 ## Adding a Feature (End-to-End)
@@ -120,14 +125,13 @@ Here's the full loop for adding something new to the app:
 
 1. Add a model to `api/Api.Web/Models/` that implements `IAudit`
 2. Add a `DbSet` for it in `AppDbContext`
-3. Run a migration (`dotnet ef migrations add <Name>`)
+3. Run a migration (`dotnet ef migrations add <Name> --project api/Api.Web`)
 4. Register the entity set in `Program.cs` with the OData model builder
-5. Build the API — the controller is generated automatically in `api/Api.Web/Controllers/` if it doesn't exist yet
+5. Run `npm run gen:api` from `ui/` — generates the controller, TypeScript types, and React Query hooks
 
 ### Frontend
 
-1. Build the API — `ui/src/types/<ModelName>.ts` and `ui/src/hooks/<ModelName>.ts` are generated automatically
-2. Import your hooks from `ui/src/hooks/<ModelName>.ts` and use them in a route
+1. Import your hooks from `ui/src/hooks/<ModelName>.ts` and use them in a route
 
 **Reading data:**
 
@@ -144,6 +148,7 @@ const { data } = useWeatherForecast("$top=5&$orderby=Date desc");
 
 ```ts
 import { useCreateWeatherForecast, useUpdateWeatherForecast, useDeleteWeatherForecast } from "@/hooks/WeatherForecast";
+import type { WeatherForecastType } from "@/types/WeatherForecastType";
 
 const create = useCreateWeatherForecast();
 create.mutate({ date: "2026-01-01", temperatureC: 22, summary: "Mild" });
@@ -164,7 +169,7 @@ The `delta` on update is typed as `Partial<T>` — TypeScript only allows fields
 `@/` maps to `ui/src/` throughout the codebase. For example:
 
 ```ts
-import { type WeatherForecast } from "@/types/WeatherForecast";
+import type { WeatherForecastType } from "@/types/WeatherForecastType";
 ```
 
 ### OData Response Shape
@@ -173,8 +178,9 @@ OData wraps all list responses in a consistent envelope. There's a typed helper 
 
 ```ts
 import type { ODataResponse } from "@/types/odata";
+import type { WeatherForecastType } from "@/types/WeatherForecastType";
 
-axios.get<ODataResponse<WeatherForecast>>("/odata/WeatherForecast")
+axios.get<ODataResponse<WeatherForecastType>>("/odata/WeatherForecast")
 ```
 
 ## UI Framework (React)
@@ -271,9 +277,9 @@ For the request/response types, put them in `api/Api.Web/Models/` and tag them w
 
 ### Type Generator
 
-A custom tool that runs on every build and generates one file per model from the C# models:
+A custom tool (`npm run gen:api` from `ui/`) that generates one file per model from the C# models:
 
-- `ui/src/types/<ModelName>.ts` - TypeScript interface
+- `ui/src/types/<ModelName>Type.ts` - TypeScript interface (exported as `<ModelName>Type`)
 - `ui/src/hooks/<ModelName>.ts` - React Query hooks with optional OData query param support
 
 Each model gets its own file, so you can open, read, or manually edit a specific model's types or hooks without wading through a monolithic generated file.

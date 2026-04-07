@@ -1,14 +1,14 @@
 // AUTO GENERATED with ❤️ by Api.TypeGen
-// Last Generated: 2026-04-06 01:28:23 UTC
+// Last Generated: 2026-04-07 01:24:36 UTC
 
 import { useQuery, useMutation } from "@tanstack/react-query";
 import axios from "axios";
 import type { ODataResponse } from "@/types/odata";
-import type { WeatherForecast } from "@/types/WeatherForecast";
+import type { WeatherForecastType } from "@/types/WeatherForecastType";
 
 const getWeatherForecast = (query?: string) =>
   axios
-    .get<ODataResponse<WeatherForecast>>(`${import.meta.env.VITE_API_URL}/odata/WeatherForecast${query ? `?${query}` : ""}`)
+    .get<ODataResponse<WeatherForecastType>>(`${import.meta.env.VITE_API_URL}/odata/WeatherForecast${query ? `?${query}` : ""}`)
     .then((res) => res.data);
 
 export const useWeatherForecast = (query?: string) =>
@@ -19,17 +19,17 @@ export const useWeatherForecast = (query?: string) =>
 
 export const useCreateWeatherForecast = () =>
   useMutation({
-    mutationFn: (item: WeatherForecast) =>
+    mutationFn: (item: WeatherForecastType) =>
       axios
-        .post<WeatherForecast>(`${import.meta.env.VITE_API_URL}/odata/WeatherForecast`, item)
+        .post<WeatherForecastType>(`${import.meta.env.VITE_API_URL}/odata/WeatherForecast`, item)
         .then((res) => res.data),
   });
 
 export const useUpdateWeatherForecast = () =>
   useMutation({
-    mutationFn: ({ key, delta }: { key: number; delta: Partial<WeatherForecast> }) =>
+    mutationFn: ({ key, delta }: { key: number; delta: Partial<WeatherForecastType> }) =>
       axios
-        .patch<WeatherForecast>(`${import.meta.env.VITE_API_URL}/odata/WeatherForecast(${key})`, delta)
+        .patch<WeatherForecastType>(`${import.meta.env.VITE_API_URL}/odata/WeatherForecast(${key})`, delta)
         .then((res) => res.data),
   });
 
