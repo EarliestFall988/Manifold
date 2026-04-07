@@ -320,7 +320,7 @@ static string MapType(TypeSyntax typeSyntax)
             or "double" or "decimal" or "uint" or "ulong" or "ushort" => "number",
         "bool" => "boolean",
         "object" => "unknown",
-        var t => t  // fallback: preserve name (handles references to other model types)
+        var t => $"{t}Type"  // fallback: append Type suffix for model type references
     };
 }
 

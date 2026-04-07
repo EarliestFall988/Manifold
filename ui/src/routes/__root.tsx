@@ -15,7 +15,7 @@ export const Route = createRootRoute({
               <header className="flex items-center gap-2 h-8 shrink-0">
                 <SidebarTrigger />
               </header>
-              <div className="flex-1 p-1 h-[95%] rounded-lg border-border border shadow-sm">
+              <div className="flex-1 p-2 max-h-[94%] overflow-auto rounded-lg border-border border shadow-sm">
                 <Outlet />
               </div>
             </div>

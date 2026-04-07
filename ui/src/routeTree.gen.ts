@@ -12,7 +12,11 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as WeatherIndexRouteImport } from './routes/weather/index'
 import { Route as StudentListIndexRouteImport } from './routes/student-list/index'
+import { Route as CourseCatalogIndexRouteImport } from './routes/course-catalog/index'
 import { Route as StudentListAddIndexRouteImport } from './routes/student-list/add/index'
+import { Route as StudentListIdIndexRouteImport } from './routes/student-list/$id/index'
+import { Route as CourseCatalogAddIndexRouteImport } from './routes/course-catalog/add/index'
+import { Route as CourseCatalogIdIndexRouteImport } from './routes/course-catalog/$id/index'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -29,43 +33,104 @@ const StudentListIndexRoute = StudentListIndexRouteImport.update({
   path: '/student-list/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CourseCatalogIndexRoute = CourseCatalogIndexRouteImport.update({
+  id: '/course-catalog/',
+  path: '/course-catalog/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const StudentListAddIndexRoute = StudentListAddIndexRouteImport.update({
   id: '/student-list/add/',
   path: '/student-list/add/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const StudentListIdIndexRoute = StudentListIdIndexRouteImport.update({
+  id: '/student-list/$id/',
+  path: '/student-list/$id/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CourseCatalogAddIndexRoute = CourseCatalogAddIndexRouteImport.update({
+  id: '/course-catalog/add/',
+  path: '/course-catalog/add/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CourseCatalogIdIndexRoute = CourseCatalogIdIndexRouteImport.update({
+  id: '/course-catalog/$id/',
+  path: '/course-catalog/$id/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/course-catalog/': typeof CourseCatalogIndexRoute
   '/student-list/': typeof StudentListIndexRoute
   '/weather/': typeof WeatherIndexRoute
+  '/course-catalog/$id/': typeof CourseCatalogIdIndexRoute
+  '/course-catalog/add/': typeof CourseCatalogAddIndexRoute
+  '/student-list/$id/': typeof StudentListIdIndexRoute
   '/student-list/add/': typeof StudentListAddIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/course-catalog': typeof CourseCatalogIndexRoute
   '/student-list': typeof StudentListIndexRoute
   '/weather': typeof WeatherIndexRoute
+  '/course-catalog/$id': typeof CourseCatalogIdIndexRoute
+  '/course-catalog/add': typeof CourseCatalogAddIndexRoute
+  '/student-list/$id': typeof StudentListIdIndexRoute
   '/student-list/add': typeof StudentListAddIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/course-catalog/': typeof CourseCatalogIndexRoute
   '/student-list/': typeof StudentListIndexRoute
   '/weather/': typeof WeatherIndexRoute
+  '/course-catalog/$id/': typeof CourseCatalogIdIndexRoute
+  '/course-catalog/add/': typeof CourseCatalogAddIndexRoute
+  '/student-list/$id/': typeof StudentListIdIndexRoute
   '/student-list/add/': typeof StudentListAddIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/student-list/' | '/weather/' | '/student-list/add/'
+  fullPaths:
+    | '/'
+    | '/course-catalog/'
+    | '/student-list/'
+    | '/weather/'
+    | '/course-catalog/$id/'
+    | '/course-catalog/add/'
+    | '/student-list/$id/'
+    | '/student-list/add/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/student-list' | '/weather' | '/student-list/add'
-  id: '__root__' | '/' | '/student-list/' | '/weather/' | '/student-list/add/'
+  to:
+    | '/'
+    | '/course-catalog'
+    | '/student-list'
+    | '/weather'
+    | '/course-catalog/$id'
+    | '/course-catalog/add'
+    | '/student-list/$id'
+    | '/student-list/add'
+  id:
+    | '__root__'
+    | '/'
+    | '/course-catalog/'
+    | '/student-list/'
+    | '/weather/'
+    | '/course-catalog/$id/'
+    | '/course-catalog/add/'
+    | '/student-list/$id/'
+    | '/student-list/add/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CourseCatalogIndexRoute: typeof CourseCatalogIndexRoute
   StudentListIndexRoute: typeof StudentListIndexRoute
   WeatherIndexRoute: typeof WeatherIndexRoute
+  CourseCatalogIdIndexRoute: typeof CourseCatalogIdIndexRoute
+  CourseCatalogAddIndexRoute: typeof CourseCatalogAddIndexRoute
+  StudentListIdIndexRoute: typeof StudentListIdIndexRoute
   StudentListAddIndexRoute: typeof StudentListAddIndexRoute
 }
 
@@ -92,6 +157,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StudentListIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/course-catalog/': {
+      id: '/course-catalog/'
+      path: '/course-catalog'
+      fullPath: '/course-catalog/'
+      preLoaderRoute: typeof CourseCatalogIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/student-list/add/': {
       id: '/student-list/add/'
       path: '/student-list/add'
@@ -99,13 +171,38 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StudentListAddIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/student-list/$id/': {
+      id: '/student-list/$id/'
+      path: '/student-list/$id'
+      fullPath: '/student-list/$id/'
+      preLoaderRoute: typeof StudentListIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/course-catalog/add/': {
+      id: '/course-catalog/add/'
+      path: '/course-catalog/add'
+      fullPath: '/course-catalog/add/'
+      preLoaderRoute: typeof CourseCatalogAddIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/course-catalog/$id/': {
+      id: '/course-catalog/$id/'
+      path: '/course-catalog/$id'
+      fullPath: '/course-catalog/$id/'
+      preLoaderRoute: typeof CourseCatalogIdIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CourseCatalogIndexRoute: CourseCatalogIndexRoute,
   StudentListIndexRoute: StudentListIndexRoute,
   WeatherIndexRoute: WeatherIndexRoute,
+  CourseCatalogIdIndexRoute: CourseCatalogIdIndexRoute,
+  CourseCatalogAddIndexRoute: CourseCatalogAddIndexRoute,
+  StudentListIdIndexRoute: StudentListIdIndexRoute,
   StudentListAddIndexRoute: StudentListAddIndexRoute,
 }
 export const routeTree = rootRouteImport

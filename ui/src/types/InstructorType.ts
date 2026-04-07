@@ -1,10 +1,13 @@
 // AUTO GENERATED with ❤️ by Api.TypeGen
-// Last Generated: 2026-04-07 01:24:36 UTC
+// Last Generated: 2026-04-07 01:56:46 UTC
+
+import type { CourseType } from "./CourseType";
 
 export interface InstructorType {
   Id: number;
   Name: string;
   Department: string;
+  Courses: CourseType[];
   Inserted: string;
   InsertedBy: string;
   Updated: string | null;

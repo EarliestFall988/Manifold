@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { House, CloudSun, UsersIcon } from "@phosphor-icons/react";
+import { House, CloudSun, UsersIcon, MountainsIcon } from "@phosphor-icons/react";
 import {
   Sidebar,
   SidebarContent,
@@ -17,6 +17,7 @@ const navItems = [
   { title: "Home", to: "/", icon: House },
   { title: "Weather", to: "/weather/", icon: CloudSun },
   { title: "Students", to: "/student-list/", icon: UsersIcon },
+  { title: "Course Catalog", to: "/course-catalog/", icon: MountainsIcon },
 ];
 
 export function AppSidebar() {

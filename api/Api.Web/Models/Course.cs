@@ -10,6 +10,11 @@ public class Course : IAudit
     public string Description { get; set; } = default!;
     public int Weeks { get; set; }
     public int Credits { get; set; }
+
+    public int? StudentId { get; set; }
+
+    public Instructor? Instructor { get; set; }
+
     public DateTime Inserted { get; set; }
     public required string InsertedBy { get; set; }
     public DateTime? Updated { get; set; }

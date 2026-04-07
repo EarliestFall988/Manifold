@@ -9,6 +9,7 @@ public class Student : IAudit
     public string Name { get; set; } = default!;
     public int Age { get; set; }
 
+    public List<Course> Courses { get; set; } = [];
 
     public DateTime Inserted { get; set; }
     public required string InsertedBy { get; set; }

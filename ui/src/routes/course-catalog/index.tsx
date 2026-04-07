@@ -13,39 +13,35 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useStudent } from "@/hooks/Student";
+import { useCourse } from "@/hooks/Course";
 import { exportCsv } from "@/lib/exportCsv";
-import { DownloadSimpleIcon, MagnifyingGlassIcon, UserPlusIcon } from "@phosphor-icons/react";
+import { BookOpenIcon, DownloadSimpleIcon, MagnifyingGlassIcon } from "@phosphor-icons/react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 
-export const Route = createFileRoute("/student-list/")({
+export const Route = createFileRoute("/course-catalog/")({
   component: RouteComponent,
 });
 
 function RouteComponent() {
   const [search, setSearch] = useState("");
-  const { data, isLoading } = useStudent();
+  const { data, isLoading } = useCourse();
 
-  const students = (data?.value ?? []).filter((s) =>
-    s.Name.toLowerCase().includes(search.toLowerCase()),
+  const courses = (data?.value ?? []).filter((c) =>
+    c.Name.toLowerCase().includes(search.toLowerCase()),
   );
 
   const nav = useNavigate();
 
-  const handleAddStudent = () => {
-    nav({ to: "/student-list/add" });
-  };
-
-  const visitStudent = (id: number) => {
-    nav({ to: `/student-list/${id}` });
+  const handleAddCourse = () => {
+    nav({ to: "/course-catalog/add" });
   };
 
   return (
     <div>
       <Header
-        headerText="Students"
-        description="This is a placeholder page for the students route"
+        headerText="Course Catalog"
+        description="Browse and manage available courses"
       />
 
       <div className="flex gap-4 p-2 items-center justify-center">
@@ -60,18 +56,18 @@ function RouteComponent() {
           </InputGroupAddon>
         </InputGroup>
 
-        <Button variant={"outline"} onClick={handleAddStudent}>
-          <UserPlusIcon />
-          New Student
+        <Button variant={"outline"} onClick={handleAddCourse}>
+          <BookOpenIcon />
+          New Course
         </Button>
 
         <Button
           variant={"outline"}
-          disabled={students.length === 0}
+          disabled={courses.length === 0}
           onClick={() =>
             exportCsv(
-              "students.csv",
-              students.map((s) => ({ Id: s.Id, Name: s.Name, Age: s.Age, Inserted: s.Inserted, InsertedBy: s.InsertedBy }))
+              "courses.csv",
+              courses.map((c) => ({ Id: c.Id, Name: c.Name, Description: c.Description, Weeks: c.Weeks, Credits: c.Credits }))
             )
           }
         >
@@ -84,33 +80,37 @@ function RouteComponent() {
           <TableHeader>
             <TableRow>
               <TableHead>Name</TableHead>
-              <TableHead>Age</TableHead>
+              <TableHead>Description</TableHead>
+              <TableHead>Weeks</TableHead>
+              <TableHead>Credits</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
                 <TableCell
-                  colSpan={2}
+                  colSpan={4}
                   className="text-center text-muted-foreground"
                 >
                   Loading...
                 </TableCell>
               </TableRow>
-            ) : students.length === 0 ? (
+            ) : courses.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={2}
+                  colSpan={4}
                   className="text-center text-muted-foreground"
                 >
-                  No students found.
+                  No courses found.
                 </TableCell>
               </TableRow>
             ) : (
-              students.map((s) => (
-                <TableRow onClick={() => visitStudent(s.Id)} key={s.Id}>
-                  <TableCell>{s.Name}</TableCell>
-                  <TableCell>{s.Age}</TableCell>
+              courses.map((c) => (
+                <TableRow key={c.Id} className="cursor-pointer" onClick={() => nav({ to: "/course-catalog/$id", params: { id: String(c.Id) } })}>
+                  <TableCell>{c.Name}</TableCell>
+                  <TableCell>{c.Description}</TableCell>
+                  <TableCell>{c.Weeks}</TableCell>
+                  <TableCell>{c.Credits}</TableCell>
                 </TableRow>
               ))
             )}

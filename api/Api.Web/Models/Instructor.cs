@@ -10,6 +10,8 @@ public class Instructor : IAudit
     public string Name { get; set; } = default!;
     public string Department { get; set; } = default!;
 
+    public List<Course> Courses { get; set; } = new();
+
     public DateTime Inserted { get; set; }
     public required string InsertedBy { get; set; }
     public DateTime? Updated { get; set; }
