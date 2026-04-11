@@ -11,19 +11,25 @@ export const Route = createFileRoute("/student-list/add/")({
 
 function RouteComponent() {
   const nav = useNavigate();
-  const create = useCreateStudent();
+  const { mutateAsync } = useCreateStudent();
 
   const form = useForm({
     defaultValues: {
       name: "",
       age: "",
+      email: "",
+      gpa: "",
+      major: "",
     },
     onSubmit: async ({ value }) => {
-      await create.mutateAsync({
+      await mutateAsync({
         Id: 0,
         Name: value.name,
         Age: Number(value.age),
         Inserted: new Date().toISOString(),
+        Email: value.email,
+        GPA: value.gpa,
+        Major: value.major,
         Courses: [],
         InsertedBy: "UI",
         Updated: null,
@@ -36,7 +42,10 @@ function RouteComponent() {
 
   return (
     <div>
-      <Header headerText="New Student" description="Add a new student record." />
+      <Header
+        headerText="New Student"
+        description="Add a new student record."
+      />
 
       <form
         className="flex flex-col gap-4 p-4 max-w-sm"
@@ -102,6 +111,41 @@ function RouteComponent() {
                   {field.state.meta.errors[0].toString()}
                 </p>
               )}
+            </div>
+          )}
+        </form.Field>
+
+        <form.Field name="email">
+          {(field) => (
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium" htmlFor={field.name}>
+                Email
+              </label>
+              <Input
+                id={field.name}
+                type="email"
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                onBlur={field.handleBlur}
+                placeholder="Email"
+              />
+            </div>
+          )}
+        </form.Field>
+
+        <form.Field name="gpa">
+          {(field) => (
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium" htmlFor={field.name}>
+                GPA
+              </label>
+              <Input
+                id={field.name}
+                value={field.state.value}
+                onChange={(e) => field.handleChange(e.target.value)}
+                onBlur={field.handleBlur}
+                placeholder="GPA"
+              />
             </div>
           )}
         </form.Field>

@@ -1,5 +1,4 @@
 import { Header } from "@/components/header";
-import { Loader } from "@/components/loader";
 import { Button } from "@/components/ui/button";
 import {
   InputGroup,
@@ -20,7 +19,6 @@ import {
   BookOpenIcon,
   DownloadSimpleIcon,
   MagnifyingGlassIcon,
-  SpinnerIcon,
 } from "@phosphor-icons/react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";

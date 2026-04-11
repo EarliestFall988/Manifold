@@ -48,6 +48,7 @@ The full loop looks like this: add a C# model → run a migration → build the 
     - [Type Generator](#type-generator)
     - [Entity Framework Core](#entity-framework-core)
     - [SQLite](#sqlite)
+  - [FAQ](#faq)
 
 ## Getting Started
 
@@ -70,7 +71,7 @@ cd api/Api.Web
 dotnet run
 ```
 
-Migrations run automatically on startup. The database defaults to a local `app.db` SQLite file. To use a different database, set a `ConnectionStrings.Default` value in `appsettings.json`.
+Migrations run automatically on startup. The database defaults to a local `app.db` SQLite file — this is for demo purposes only. For production use, swap in the EF Core provider for your database of choice and set `ConnectionStrings.Default` in `appsettings.json`.
 
 CORS is already configured for the default Vite dev ports (`localhost:5173` and `localhost:5174`) in `appsettings.Development.json`.
 
@@ -110,11 +111,11 @@ npm run gen:api
 
 This is not typical for most TypeScript stacks - and it's a big deal. Frontend devs don't need to open Postman or dig through backend code to figure out the shape of the data. The types and hooks just show up, and TypeScript will tell you immediately if something is wrong. Teams can move really fast with this setup.
 
-To add a new migration after updating your models:
+To add a new migration after updating your models, run these from the `ui/` directory:
 
 ```bash
-dotnet ef migrations add <MigrationName> --project api/Api.Web
-dotnet ef database update --project api/Api.Web
+npm run migrate:add -- <MigrationName>
+npm run migrate:update
 ```
 
 ## Adding a Feature (End-to-End)
@@ -125,7 +126,7 @@ Here's the full loop for adding something new to the app:
 
 1. Add a model to `api/Api.Web/Models/` that implements `IAudit`
 2. Add a `DbSet` for it in `AppDbContext`
-3. Run a migration (`dotnet ef migrations add <Name> --project api/Api.Web`)
+3. Run a migration (`npm run migrate:add -- <Name>` from `ui/`, then `npm run migrate:update`)
 4. Register the entity set in `Program.cs` with the OData model builder
 5. Run `npm run gen:api` from `ui/` — generates the controller, TypeScript types, and React Query hooks
 
@@ -221,7 +222,6 @@ My go-to icon library. Over 1,400 icons, consistent design language, multiple we
 
 Adds smooth animations to lists and DOM changes with a single line of code. Drop it on a parent element and everything inside animates automatically.
 
-
 ## API Framework (ASP.NET Core)
 
 ### [OData](https://learn.microsoft.com/en-us/odata/webapi-8/overview)
@@ -315,4 +315,81 @@ The ORM used to interact with the database. Handles migrations, change tracking,
 
 ### [SQLite](https://www.sqlite.org/)
 
-A lightweight, file-based database that's easy to get running locally. For production you'll swap this out for SQL Server, but SQLite keeps the setup simple during development.
+SQLite is used here for demo purposes only. It requires zero configuration and no running database server, which makes it ideal for getting the stack in front of people quickly.
+
+For any real workload, replace it with whatever database fits your requirements — SQL Server, PostgreSQL, MySQL, etc. EF Core supports all of them with a provider swap and a connection string change. SQLite has meaningful behavioral differences from production-grade databases (case sensitivity, limited ALTER TABLE support, transaction behavior) that will surface if you try to carry it into production.
+
+## FAQ
+
+**Why are migration commands run from the `ui/` directory?**
+
+Convenience. The alternative is a `Makefile` (not available on Windows without extra tooling) or a PowerShell script (not available on macOS/Linux without extra tooling). `package.json` scripts work everywhere Node is installed, which is already a prerequisite for running the frontend. It's a pragmatic middle ground — not a statement about where migrations conceptually belong.
+
+---
+
+**Why is my query only returning 100 results?**
+
+`SetMaxTop(100)` is configured in `Program.cs`. OData requires an explicit max page size to prevent unbounded queries — without it, a client could request the entire table in one shot. 100 is the default; adjust it to fit your use case. For large datasets, use `$top` and `$skip` to paginate rather than raising the limit arbitrarily.
+
+---
+
+**How do I load related data (e.g., a student's courses)?**
+
+Use OData's `$expand`. Navigation properties on your C# model are available for expansion as long as `.Expand()` is enabled (it is, in `Program.cs`):
+
+```ts
+const { data } = useStudent("$expand=Courses");
+```
+
+The expanded data comes back inline with each entity. On the TypeScript side, the generated type won't include the navigation property by default — you can add it manually to the generated interface, or add a `[TsName]`-annotated property and re-run `gen:api`.
+
+---
+
+**What is `Api.TypeGen`?**
+
+It's a separate C# console project that lives at `api/Api.TypeGen/`. When you run `npm run gen:api`, it compiles and runs that project, which reflects over the models in `Api.Web/Models/`, reads the TypeGen attributes, and writes out the TypeScript files. If you need to change how types or hooks are generated — field casing, hook shape, added imports — that's where to look. It has no runtime role; it's purely a build-time tool.
+
+---
+
+**Why is `InsertedBy` required if there's no auth configured?**
+
+`IAudit` is designed for apps that have an authenticated user to stamp on records. In a fully wired setup, `InsertedBy` and `UpdatedBy` get populated from the current user's identity — typically in a base controller or a `SaveChanges` override in `AppDbContext`.
+
+Out of the box (no auth), you'll need to pass a placeholder value when creating records. The practical fix is to intercept it in `AppDbContext.SaveChanges()`:
+
+```csharp
+public override int SaveChanges()
+{
+    foreach (var entry in ChangeTracker.Entries<IAudit>())
+    {
+        if (entry.State == EntityState.Added)
+        {
+            entry.Entity.Inserted = DateTime.UtcNow;
+            entry.Entity.InsertedBy = "system"; // replace with real user identity
+        }
+        if (entry.State == EntityState.Modified)
+        {
+            entry.Entity.Updated = DateTime.UtcNow;
+            entry.Entity.UpdatedBy = "system";
+        }
+    }
+    return base.SaveChanges();
+}
+```
+
+Once auth is in place, swap `"system"` for the actual user claim.
+
+---
+
+**Why OData instead of GraphQL or tRPC?**
+
+The short version: OData is like putting a SQL query in a URL. `$filter`, `$orderby`, `$top`, `$skip`, and `$select` map directly to `WHERE`, `ORDER BY`, `LIMIT`, `OFFSET`, and column selection. If you've written SQL, the mental model is already there.
+
+A few reasons it fits this stack:
+
+- **No schema to maintain.** GraphQL requires a schema file that has to stay in sync with the backend. OData derives its queryable surface directly from the EF model — the same model that drives the database. There's no separate layer to drift.
+- **Standard protocol, not a framework.** OData is an IETF standard with first-class support in ASP.NET Core. tRPC requires TypeScript on both ends, which rules it out for a C# backend. GraphQL requires a resolver layer that adds meaningful complexity.
+- **The frontend stays in control.** Filtering, sorting, pagination, and field selection are all client-driven via query params. The backend doesn't need to anticipate every combination — it just exposes the data.
+- **Mutations are handled too.** OData's `Delta<T>` PATCH semantics give you type-safe partial updates without writing custom endpoints for every resource.
+
+The tradeoff is that OData's query syntax is unfamiliar at first, and it's a worse fit for complex nested mutations or highly custom business logic — which is why the stack also supports plain REST endpoints for anything that doesn't fit the CRUD model.

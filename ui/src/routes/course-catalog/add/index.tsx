@@ -19,11 +19,13 @@ function RouteComponent() {
       description: "",
       weeks: "",
       credits: "",
+      
     },
     onSubmit: async ({ value }) => {
       await create.mutateAsync({
         Id: 0,
         Name: value.name,
+        StudentId: null,
         Description: value.description,
         Weeks: Number(value.weeks),
         Credits: Number(value.credits),

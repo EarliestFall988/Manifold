@@ -1,15 +1,13 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useCourseByKey } from "@/hooks/Course";
 import { Button } from "@/components/ui/button";
 import {
   ArrowLeftIcon,
-  BookOpenIcon,
   ClockIcon,
   SpinnerIcon,
   StarIcon,
   UserIcon,
 } from "@phosphor-icons/react";
-
+import { useCourse } from "@/hooks/Course";
 
 export const Route = createFileRoute("/course-catalog/$id/")({
   component: RouteComponent,
@@ -18,7 +16,9 @@ export const Route = createFileRoute("/course-catalog/$id/")({
 function RouteComponent() {
   const { id } = Route.useParams();
   const nav = useNavigate();
-  const { data: course, isLoading, isError } = useCourseByKey(Number(id));
+  const { data, isLoading, isError } = useCourse(`$filter=Id eq ${id}`);
+
+  const course = data?.value?.[0];
 
   if (isLoading)
     return (

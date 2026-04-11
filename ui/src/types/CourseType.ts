@@ -1,7 +1,5 @@
 // AUTO GENERATED with ❤️ by Api.TypeGen
-// Last Generated: 2026-04-07 01:56:46 UTC
-
-import type { InstructorType } from "./InstructorType";
+// Last Generated: 2026-04-11 21:07:16 UTC
 
 export interface CourseType {
   Id: number;

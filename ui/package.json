@@ -8,7 +8,9 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "gen:api": "dotnet run --project ../api/Api.TypeGen -- ../api/Api.Web/Models src/types src/hooks ../api/Api.Web/Controllers"
+    "gen:api": "dotnet run --project ../api/Api.TypeGen -- ../api/Api.Web/Models src/types src/hooks ../api/Api.Web/Controllers",
+    "migrate:add": "dotnet ef migrations add --project ../api/Api.Web",
+    "migrate:update": "dotnet ef database update --project ../api/Api.Web"
   },
   "dependencies": {
     "@fontsource-variable/dm-sans": "^5.2.8",

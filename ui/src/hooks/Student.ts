@@ -1,5 +1,5 @@
 // AUTO GENERATED with ❤️ by Api.TypeGen
-// Last Generated: 2026-04-07 01:56:46 UTC
+// Last Generated: 2026-04-11 21:07:16 UTC
 
 import { useQuery, useMutation } from "@tanstack/react-query";
 import axios from "axios";
@@ -11,23 +11,10 @@ const getStudent = (query?: string) =>
     .get<ODataResponse<StudentType>>(`${import.meta.env.VITE_API_URL}/odata/Student${query ? `?${query}` : ""}`)
     .then((res) => res.data);
 
-const getStudentByKey = (id: number) =>
-  axios
-    .get<ODataResponse<StudentType>>(
-      `${import.meta.env.VITE_API_URL}/odata/Student?$filter=Id eq ${id}&$expand=Courses`
-    )
-    .then((res) => res.data.value[0] ?? null);
-
 export const useStudent = (query?: string) =>
   useQuery({
     queryKey: ["Student", query],
     queryFn: () => getStudent(query),
-  });
-
-export const useStudentByKey = (id: number) =>
-  useQuery({
-    queryKey: ["Student", id],
-    queryFn: () => getStudentByKey(id),
   });
 
 export const useCreateStudent = () =>

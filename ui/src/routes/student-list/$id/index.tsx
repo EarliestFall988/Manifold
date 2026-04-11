@@ -8,10 +8,10 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useCourse, useUpdateCourse } from "@/hooks/Course";
-import { useStudentByKey } from "@/hooks/Student";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useStudent } from "@/hooks/Student";
 
 export const Route = createFileRoute("/student-list/$id/")({
   component: RouteComponent,
@@ -21,12 +21,16 @@ function RouteComponent() {
   const { id } = Route.useParams();
   const studentId = Number(id);
 
-  const queryClient = useQueryClient();
   const {
-    data: student,
+    data,
     isLoading: studentLoading,
     isError,
-  } = useStudentByKey(studentId);
+  } = useStudent(`$filter=Id eq ${studentId}`);
+
+  const student = data?.value?.[0];
+
+  const queryClient = useQueryClient();
+
   const { data: coursesData, isLoading: coursesLoading } = useCourse();
   const { mutate: updateCourse, isPending } = useUpdateCourse();
 
@@ -55,7 +59,7 @@ function RouteComponent() {
   return (
     <div className="p-6 space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">{student.Name}</h1>
+        <h1 className="text-2xl font-bold">{student?.Name}</h1>
         <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm mt-2 max-w-xs">
           <dt className="text-muted-foreground">Age</dt>
           <dd>{student.Age}</dd>

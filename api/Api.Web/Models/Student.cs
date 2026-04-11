@@ -9,6 +9,12 @@ public class Student : IAudit
     public string Name { get; set; } = default!;
     public int Age { get; set; }
 
+    public string GPA { get; set; } = "0.0";
+
+    public string Major { get; set; } = "";
+
+    public string Email { get; set; } = "";
+
     public List<Course> Courses { get; set; } = [];
 
     public DateTime Inserted { get; set; }
