@@ -1,7 +1,15 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCourseByKey } from "@/hooks/Course";
 import { Button } from "@/components/ui/button";
-import { ArrowLeftIcon, BookOpenIcon, ClockIcon, StarIcon, UserIcon } from "@phosphor-icons/react";
+import {
+  ArrowLeftIcon,
+  BookOpenIcon,
+  ClockIcon,
+  SpinnerIcon,
+  StarIcon,
+  UserIcon,
+} from "@phosphor-icons/react";
+
 
 export const Route = createFileRoute("/course-catalog/$id/")({
   component: RouteComponent,
@@ -12,12 +20,21 @@ function RouteComponent() {
   const nav = useNavigate();
   const { data: course, isLoading, isError } = useCourseByKey(Number(id));
 
-  if (isLoading) return <div className="p-6">Loading...</div>;
+  if (isLoading)
+    return (
+      <div className="p-6 w-full flex items-center justify-center">
+        <SpinnerIcon className="animate-spin" />
+      </div>
+    );
   if (isError || !course) return <div className="p-6">Course not found.</div>;
 
   return (
     <div className="p-6 max-w-2xl space-y-6">
-      <Button variant="ghost" size="sm" onClick={() => nav({ to: "/course-catalog" })}>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => nav({ to: "/course-catalog" })}
+      >
         <ArrowLeftIcon />
         Back to Catalog
       </Button>
@@ -47,11 +64,24 @@ function RouteComponent() {
       {course.Instructor && (
         <div className="border rounded-md p-4 space-y-1">
           <div className="flex items-center gap-2 font-medium">
-            <BookOpenIcon />
+            <UserIcon />
             Instructor
           </div>
           <p className="text-sm">{course.Instructor.Name}</p>
-          <p className="text-sm text-muted-foreground">{course.Instructor.Department}</p>
+          <p className="text-sm text-muted-foreground">
+            {course.Instructor.Department}
+          </p>
+        </div>
+      )}
+      {!course.Instructor && (
+        <div className="border rounded-md p-4 space-y-1">
+          <div className="flex items-center gap-2 font-medium">
+            <UserIcon />
+            Instructor
+          </div>
+          <p className="text-sm text-muted-foreground">
+            No instructor assigned
+          </p>
         </div>
       )}
     </div>

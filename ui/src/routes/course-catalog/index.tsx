@@ -1,4 +1,5 @@
 import { Header } from "@/components/header";
+import { Loader } from "@/components/loader";
 import { Button } from "@/components/ui/button";
 import {
   InputGroup,
@@ -15,9 +16,14 @@ import {
 } from "@/components/ui/table";
 import { useCourse } from "@/hooks/Course";
 import { exportCsv } from "@/lib/exportCsv";
-import { BookOpenIcon, DownloadSimpleIcon, MagnifyingGlassIcon } from "@phosphor-icons/react";
+import {
+  BookOpenIcon,
+  DownloadSimpleIcon,
+  MagnifyingGlassIcon,
+  SpinnerIcon,
+} from "@phosphor-icons/react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 export const Route = createFileRoute("/course-catalog/")({
   component: RouteComponent,
@@ -25,11 +31,11 @@ export const Route = createFileRoute("/course-catalog/")({
 
 function RouteComponent() {
   const [search, setSearch] = useState("");
-  const { data, isLoading } = useCourse();
 
-  const courses = (data?.value ?? []).filter((c) =>
-    c.Name.toLowerCase().includes(search.toLowerCase()),
-  );
+  const filter = useMemo(() => `$filter=contains(tolower(Name),tolower('${search}'))`, [search]);
+
+  const { data, isLoading } = useCourse(filter);
+  const courses = useMemo(() => data?.value ?? [], [data]);
 
   const nav = useNavigate();
 
@@ -67,7 +73,13 @@ function RouteComponent() {
           onClick={() =>
             exportCsv(
               "courses.csv",
-              courses.map((c) => ({ Id: c.Id, Name: c.Name, Description: c.Description, Weeks: c.Weeks, Credits: c.Credits }))
+              courses.map((c) => ({
+                Id: c.Id,
+                Name: c.Name,
+                Description: c.Description,
+                Weeks: c.Weeks,
+                Credits: c.Credits,
+              })),
             )
           }
         >
@@ -92,7 +104,7 @@ function RouteComponent() {
                   colSpan={4}
                   className="text-center text-muted-foreground"
                 >
-                  Loading...
+                    Loading...
                 </TableCell>
               </TableRow>
             ) : courses.length === 0 ? (
@@ -106,7 +118,16 @@ function RouteComponent() {
               </TableRow>
             ) : (
               courses.map((c) => (
-                <TableRow key={c.Id} className="cursor-pointer" onClick={() => nav({ to: "/course-catalog/$id", params: { id: String(c.Id) } })}>
+                <TableRow
+                  key={c.Id}
+                  className="cursor-pointer"
+                  onClick={() =>
+                    nav({
+                      to: "/course-catalog/$id",
+                      params: { id: String(c.Id) },
+                    })
+                  }
+                >
                   <TableCell>{c.Name}</TableCell>
                   <TableCell>{c.Description}</TableCell>
                   <TableCell>{c.Weeks}</TableCell>

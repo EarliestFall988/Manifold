@@ -11,6 +11,7 @@ import { useCourse, useUpdateCourse } from "@/hooks/Course";
 import { useStudentByKey } from "@/hooks/Student";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/student-list/$id/")({
   component: RouteComponent,
@@ -21,12 +22,18 @@ function RouteComponent() {
   const studentId = Number(id);
 
   const queryClient = useQueryClient();
-  const { data: student, isLoading: studentLoading, isError } = useStudentByKey(studentId);
+  const {
+    data: student,
+    isLoading: studentLoading,
+    isError,
+  } = useStudentByKey(studentId);
   const { data: coursesData, isLoading: coursesLoading } = useCourse();
-  const { mutate: updateCourse } = useUpdateCourse();
+  const { mutate: updateCourse, isPending } = useUpdateCourse();
 
   const allCourses = coursesData?.value ?? [];
-  const enrolledIds = new Set(allCourses.filter((c) => c.StudentId === studentId).map((c) => c.Id));
+  const enrolledIds = new Set(
+    allCourses.filter((c) => c.StudentId === studentId).map((c) => c.Id),
+  );
 
   const handleToggle = (courseId: number, enrolled: boolean) => {
     updateCourse(
@@ -34,8 +41,11 @@ function RouteComponent() {
       {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: ["Course"] });
+          toast.success(
+            `Student ${enrolled ? "enrolled in" : "unenrolled from"} course successfully.`,
+          );
         },
-      }
+      },
     );
   };
 
@@ -69,13 +79,19 @@ function RouteComponent() {
           <TableBody>
             {coursesLoading ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground">
+                <TableCell
+                  colSpan={5}
+                  className="text-center text-muted-foreground"
+                >
                   Loading...
                 </TableCell>
               </TableRow>
             ) : allCourses.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground">
+                <TableCell
+                  colSpan={5}
+                  className="text-center text-muted-foreground"
+                >
                   No courses available.
                 </TableCell>
               </TableRow>
@@ -85,7 +101,10 @@ function RouteComponent() {
                   <TableCell>
                     <Checkbox
                       checked={enrolledIds.has(c.Id)}
-                      onCheckedChange={(checked: boolean) => handleToggle(c.Id, checked)}
+                      onCheckedChange={(checked: boolean) =>
+                        handleToggle(c.Id, checked)
+                      }
+                      disabled={isPending}
                     />
                   </TableCell>
                   <TableCell>{c.Name}</TableCell>
